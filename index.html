@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Detection via Machine Learning</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chosen Palette: Calm Neutrals with Trust Accents (Slate background, Blue primary, subtle Red/Green indicators) -->
+    <!-- Application Structure Plan: A linear, storytelling dashboard approach. 
+         1. 'Context': Introduces the problem and baseline concepts. 
+         2. 'The Architecture': An interactive process flow demonstrating how raw text becomes a prediction, demystifying the ML pipeline. 
+         3. 'Model Analytics': The core dashboard comparing traditional vs. deep learning models using interactive charts. 
+         4. 'Linguistic Markers': Explores feature importance. 
+         This structure moves the user logically from problem -> process -> results -> insights. -->
+    <!-- Visualization & Content Choices: 
+         1. Pipeline Flow -> Goal: Inform/Organize -> Viz: Interactive CSS/HTML grid (NO SVG) -> Interaction: Click to reveal step details -> Justifies breaking down complex methodologies.
+         2. Model Accuracy Comparison -> Goal: Compare -> Viz: Bar Chart (Chart.js) -> Interaction: Dropdown to switch model families -> Justifies showing macro performance trends.
+         3. Precision vs Recall -> Goal: Relationships/Compare -> Viz: Radar Chart (Chart.js) -> Interaction: Updates with dropdown -> Justifies showing the tradeoff between catching fakes (recall) vs false alarms (precision).
+         4. NO SVG/Mermaid used. All visuals are Canvas or DOM-based. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #334155;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 45vh;
+            max-height: 450px;
+            min-height: 300px;
+            padding: 1rem;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .step-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .step-card.active {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-blue-200 selection:text-blue-900">
+
+    <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center font-bold text-xl text-blue-700">
+                    <span class="mr-2 text-2xl">&#9635;</span> VeracityML
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#context" class="text-slate-500 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors nav-link">Context</a>
+                    <a href="#architecture" class="text-slate-500 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors nav-link">Architecture</a>
+                    <a href="#analytics" class="text-slate-500 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors nav-link">Analytics</a>
+                    <a href="#insights" class="text-slate-500 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors nav-link">Insights</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="bg-gradient-to-b from-blue-50 to-slate-50 pt-20 pb-16 border-b border-slate-200">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
+                Decoding Deception: <span class="text-blue-600">Machine Learning</span> in Fake News Detection
+            </h1>
+            <p class="text-lg md:text-xl text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+                An interactive analysis of how artificial intelligence processes linguistic patterns to distinguish factual reporting from fabricated misinformation.
+            </p>
+            <div class="inline-flex items-center bg-white rounded-full px-5 py-2 border border-slate-200 shadow-sm text-sm font-medium text-slate-600">
+                <span class="w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                Report Synthesized Data · Interactive Environment
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="context" class="py-16 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="mb-12 border-l-4 border-blue-500 pl-4">
+                    <h2 class="text-3xl font-bold text-slate-900 mb-2">The Challenge of Context</h2>
+                    <p class="text-slate-600 max-w-3xl">
+                        This section establishes the foundation of the report. It outlines why programmatic detection of fake news is non-trivial. The interaction here is conceptual, setting the stage for the technical solutions that follow.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h3 class="text-2xl font-semibold mb-4 text-slate-800">Beyond Fact-Checking</h3>
+                        <p class="text-slate-600 mb-4 leading-relaxed">
+                            Traditional fact-checking relies on external verification against known truths. Machine Learning approaches take a different path: they analyze the <strong>stylometric and linguistic features</strong> of the text itself.
+                        </p>
+                        <p class="text-slate-600 leading-relaxed">
+                            Fabricated news often employs specific psychological triggers—hyperbolic language, emotional manipulation, and unusual structural patterns—that algorithms can be trained to recognize at scale, even before ground truth is established.
+                        </p>
+                    </div>
+                    <div class="bg-slate-50 p-8 rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="text-sm font-semibold uppercase tracking-wider text-slate-400">Key Distinctions</span>
+                            <span class="text-2xl text-slate-300">&#9878;</span>
+                        </div>
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <span class="text-green-500 mr-3 mt-1">&#10004;</span>
+                                <div>
+                                    <strong class="block text-slate-800">Factual News</strong>
+                                    <span class="text-sm text-slate-500">Objective tone, dense informational content, standard grammatical structures.</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-red-500 mr-3 mt-1">&#10008;</span>
+                                <div>
+                                    <strong class="block text-slate-800">Fabricated News</strong>
+                                    <span class="text-sm text-slate-500">High sentiment variance, overuse of capitalization/punctuation, subjective phrasing.</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture" class="py-16 bg-slate-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="mb-12 border-l-4 border-blue-500 pl-4">
+                    <h2 class="text-3xl font-bold text-slate-900 mb-2">The Processing Architecture</h2>
+                    <p class="text-slate-600 max-w-3xl">
+                        Explore the methodological framework detailed in the source report. Click on each stage of the pipeline below to reveal how raw text data is mathematically transformed and fed into classification models.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="step-card bg-white border border-slate-200 rounded-xl p-6 text-center shadow-sm active" data-target="step-data">
+                        <div class="text-3xl mb-3 text-blue-500">&#128196;</div>
+                        <h4 class="font-bold text-slate-800">1. Data Ingestion</h4>
+                    </div>
+                    <div class="step-card bg-white border border-slate-200 rounded-xl p-6 text-center shadow-sm" data-target="step-clean">
+                        <div class="text-3xl mb-3 text-blue-500">&#9986;</div>
+                        <h4 class="font-bold text-slate-800">2. Preprocessing</h4>
+                    </div>
+                    <div class="step-card bg-white border border-slate-200 rounded-xl p-6 text-center shadow-sm" data-target="step-vector">
+                        <div class="text-3xl mb-3 text-blue-500">&#10102;</div>
+                        <h4 class="font-bold text-slate-800">3. Vectorization</h4>
+                    </div>
+                    <div class="step-card bg-white border border-slate-200 rounded-xl p-6 text-center shadow-sm" data-target="step-model">
+                        <div class="text-3xl mb-3 text-blue-500">&#9881;</div>
+                        <h4 class="font-bold text-slate-800">4. Classification</h4>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl p-8 border border-slate-200 shadow-inner min-h-[250px]">
+                    <div id="step-data" class="step-content fade-in">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3 flex items-center">
+                            <span class="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm">1</span>
+                            Corpus Acquisition
+                        </h3>
+                        <p class="text-slate-600 mb-4">The models require massive datasets containing both verified real news and labeled fake news to learn patterns. Standard datasets like ISOT or LIAR contain thousands of articles across various domains (politics, health, finance).</p>
+                        <div class="bg-slate-100 p-4 rounded text-sm font-mono text-slate-700 border-l-2 border-slate-300">
+                            Input Example: "ALIENS LAND IN TIMES SQUARE! Government coverup exposed!!!" [Label: Fake]
+                        </div>
+                    </div>
+
+                    <div id="step-clean" class="step-content hidden">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3 flex items-center">
+                            <span class="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm">2</span>
+                            Noise Reduction & Normalization
+                        </h3>
+                        <p class="text-slate-600 mb-4">Raw text is messy. Preprocessing standardizes the input by lowering case, removing HTML tags, URLs, punctuation, and 'stop words' (common words like 'the', 'is' that carry little semantic weight). Finally, words are lemmatized (reduced to their base form).</p>
+                        <div class="bg-slate-100 p-4 rounded text-sm font-mono text-slate-700 border-l-2 border-slate-300">
+                            Processed: "alien land time square government coverup expose"
+                        </div>
+                    </div>
+
+                    <div id="step-vector" class="step-content hidden">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3 flex items-center">
+                            <span class="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm">3</span>
+                            Feature Extraction (TF-IDF vs Embeddings)
+                        </h3>
+                        <p class="text-slate-600 mb-4">Algorithms cannot read text; they require numbers. This step transforms processed text into numerical vectors.</p>
+                        <ul class="list-disc pl-5 text-slate-600 space-y-2">
+                            <li><strong>Traditional (TF-IDF):</strong> Counts word frequency but penalizes words that appear in all documents, highlighting unique terms.</li>
+                            <li><strong>Advanced (Word Embeddings/BERT):</strong> Maps words into dense, multi-dimensional spaces where semantic relationships are preserved (e.g., 'king' - 'man' + 'woman' = 'queen'). Context is maintained.</li>
+                        </ul>
+                    </div>
+
+                    <div id="step-model" class="step-content hidden">
+                        <h3 class="text-xl font-bold text-slate-800 mb-3 flex items-center">
+                            <span class="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center mr-3 text-sm">4</span>
+                            Predictive Modeling
+                        </h3>
+                        <p class="text-slate-600 mb-4">The vectorized data is fed into mathematical algorithms trained to find the boundary between 'Real' and 'Fake' data points in high-dimensional space. The output is a probability score mapping to a final classification.</p>
+                        <div class="flex space-x-4">
+                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded text-sm font-semibold border border-blue-100">Logistic Regression</span>
+                            <span class="px-3 py-1 bg-purple-50 text-purple-700 rounded text-sm font-semibold border border-purple-100">Random Forest</span>
+                            <span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded text-sm font-semibold border border-emerald-100">LSTM / BERT</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="analytics" class="py-16 bg-white border-y border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="mb-10 border-l-4 border-blue-500 pl-4 flex flex-col md:flex-row md:items-end justify-between">
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-900 mb-2">Model Analytics Dashboard</h2>
+                        <p class="text-slate-600 max-w-2xl">
+                            This dashboard quantifies the performance findings from the report. Use the dropdown to switch between traditional statistical models and advanced deep learning architectures. Observe how accuracy and error types shift.
+                        </p>
+                    </div>
+                    <div class="mt-6 md:mt-0">
+                        <label for="modelSelect" class="block text-sm font-medium text-slate-700 mb-1">Select Architecture Family</label>
+                        <select id="modelSelect" class="block w-full pl-3 pr-10 py-2 text-base border-slate-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-slate-50 border">
+                            <option value="traditional">Traditional ML (TF-IDF Based)</option>
+                            <option value="deep">Deep Learning (Embedding Based)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <h3 class="text-lg font-bold text-slate-800 mb-1 text-center">Overall Accuracy</h3>
+                        <p class="text-xs text-slate-500 mb-4 text-center">Percentage of correctly classified articles (Real & Fake)</p>
+                        <div class="chart-container">
+                            <canvas id="accuracyChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                        <h3 class="text-lg font-bold text-slate-800 mb-1 text-center">Precision vs. Recall Trade-off</h3>
+                        <p class="text-xs text-slate-500 mb-4 text-center">Averaged across selected models. Higher area is better.</p>
+                        <div class="chart-container">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 bg-blue-50 border border-blue-100 rounded-xl p-6">
+                    <h4 class="font-bold text-blue-900 mb-2">Analyst Note on Metrics:</h4>
+                    <p class="text-blue-800 text-sm" id="dynamicInsightText">
+                        Traditional models provide a strong baseline. Support Vector Machines (SVM) often outperform others in this category due to their effectiveness in high-dimensional sparse spaces created by TF-IDF. However, they struggle with sarcasm and complex context.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="insights" class="py-16 bg-slate-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="mb-12 border-l-4 border-blue-500 pl-4">
+                    <h2 class="text-3xl font-bold text-slate-900 mb-2">Linguistic Markers & Conclusions</h2>
+                    <p class="text-slate-600 max-w-3xl">
+                        Beyond raw accuracy, what do these models actually "learn"? This section synthesizes the qualitative findings regarding features that strongly indicate fabricated content.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="col-span-1 md:col-span-2 space-y-6">
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="text-lg font-bold text-slate-800 mb-3 border-b pb-2">Syntactic Complexity</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">
+                                Analysis reveals that genuine news tends to possess higher syntactic complexity. Fake news often utilizes shorter sentences, simpler vocabulary, and a higher frequency of first-person pronouns, likely aiming for immediate emotional impact and broader readability among targeted demographics.
+                            </p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="text-lg font-bold text-slate-800 mb-3 border-b pb-2">Sentiment Polarity</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">
+                                Models relying on sentiment lexicons find that fabricated content skews heavily towards extreme polarities (intense fear, anger, or elation). The variance in sentiment within a single fake article is statistically higher than in factual reporting, which maintains a more neutral, descriptive tone.
+                            </p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="text-lg font-bold text-slate-800 mb-3 border-b pb-2">The Transformer Advantage</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">
+                                Models like BERT achieved near-perfect scores because they evaluate context bidirectionally. Unlike traditional methods that treat words as isolated tokens, BERT understands that the word "bank" means something different in "river bank" versus "central bank," allowing it to detect nuanced semantic inconsistencies common in generated fake news.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-span-1 bg-slate-800 rounded-xl p-8 text-white shadow-lg relative overflow-hidden">
+                        <div class="absolute top-0 right-0 -mr-8 -mt-8 text-slate-700 opacity-50 text-9xl font-serif">"</div>
+                        <h3 class="text-xl font-bold mb-6 relative z-10 text-blue-300">Executive Summary</h3>
+                        <ul class="space-y-4 relative z-10 text-sm text-slate-300">
+                            <li class="flex items-start">
+                                <span class="text-blue-400 mr-2">&#9656;</span>
+                                Machine learning provides a scalable defense against misinformation.
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-blue-400 mr-2">&#9656;</span>
+                                Traditional algorithms offer fast, explainable results (baseline ~85-93%).
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-blue-400 mr-2">&#9656;</span>
+                                Deep learning models (LSTMs, Transformers) set the state-of-the-art (>96% accuracy) by capturing contextual semantics.
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-blue-400 mr-2">&#9656;</span>
+                                Future challenges lie in adapting models to highly realistic AI-generated text and cross-lingual fake news detection.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-8 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-slate-500 text-sm">
+            <p>Interactive Report Synthesis: Fake News Detection Using Machine Learning Techniques.</p>
+            <p class="mt-2 text-xs text-slate-400">Visualization environment optimized for analytical review. Data presented is representative of standard benchmark findings.</p>
+            <p class="mt-4 text-xs font-medium text-slate-400">&copy; 2026 Raveesha Ramitha Lanarolle. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('section');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (scrollY >= (sectionTop - 100)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('text-blue-600', 'font-bold');
+                    link.classList.add('text-slate-500');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.remove('text-slate-500');
+                        link.classList.add('text-blue-600', 'font-bold');
+                    }
+                });
+            });
+
+            const stepCards = document.querySelectorAll('.step-card');
+            const stepContents = document.querySelectorAll('.step-content');
+
+            stepCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    stepCards.forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+
+                    stepContents.forEach(content => {
+                        content.classList.add('hidden');
+                        content.classList.remove('fade-in');
+                    });
+
+                    const targetId = this.getAttribute('data-target');
+                    const targetContent = document.getElementById(targetId);
+                    targetContent.classList.remove('hidden');
+                    
+                    void targetContent.offsetWidth; 
+                    
+                    targetContent.classList.add('fade-in');
+                });
+            });
+
+            const dataStore = {
+                traditional: {
+                    labels: ['Naive Bayes', 'Logistic Reg.', 'Random Forest', 'SVM'],
+                    accuracy: [84.5, 91.2, 90.8, 93.4],
+                    precisionAvg: 89.9,
+                    recallAvg: 90.5,
+                    f1Avg: 90.2,
+                    insight: "Traditional models provide a strong baseline. Support Vector Machines (SVM) often outperform others in this category due to their effectiveness in high-dimensional sparse spaces created by TF-IDF. However, they struggle with complex contextual nuances."
+                },
+                deep: {
+                    labels: ['CNN', 'LSTM', 'Bi-LSTM', 'BERT (Fine-tuned)'],
+                    accuracy: [94.1, 95.8, 97.2, 99.1],
+                    precisionAvg: 96.5,
+                    recallAvg: 96.8,
+                    f1Avg: 96.6,
+                    insight: "Deep Learning architectures significantly outperform traditional methods. BERT achieves near-perfect scores on benchmark datasets because it analyzes text bidirectionally, capturing deep contextual relationships and subtle semantic inconsistencies."
+                }
+            };
+
+            const ctxAcc = document.getElementById('accuracyChart').getContext('2d');
+            const ctxRadar = document.getElementById('radarChart').getContext('2d');
+            
+            let accuracyChart;
+            let radarChart;
+
+            Chart.defaults.font.family = "'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+            Chart.defaults.color = '#64748b';
+
+            function initCharts() {
+                accuracyChart = new Chart(ctxAcc, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Accuracy (%)',
+                            data: [],
+                            backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                            borderColor: 'rgb(37, 99, 235)',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.parsed.y + '%';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 80,
+                                max: 100,
+                                grid: { color: '#f1f5f9' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 0,
+                                    callback: function(value, index, values) {
+                                        const label = this.getLabelForValue(value);
+                                        if (label.length > 15) {
+                                            return label.substr(0, 15) + '...';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                radarChart = new Chart(ctxRadar, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Precision', 'Recall', 'F1-Score'],
+                        datasets: [{
+                            label: 'Average Performance',
+                            data: [],
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            borderColor: 'rgb(16, 185, 129)',
+                            pointBackgroundColor: 'rgb(16, 185, 129)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(16, 185, 129)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: '#e2e8f0' },
+                                grid: { color: '#e2e8f0' },
+                                pointLabels: { font: { size: 12 }, color: '#475569' },
+                                ticks: { min: 80, max: 100, stepSize: 5, backdropColor: 'transparent' }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            function updateDashboard(modelFamily) {
+                const data = dataStore[modelFamily];
+                
+                accuracyChart.data.labels = data.labels;
+                accuracyChart.data.datasets[0].data = data.accuracy;
+                
+                if (modelFamily === 'deep') {
+                    accuracyChart.data.datasets[0].backgroundColor = 'rgba(139, 92, 246, 0.7)';
+                    accuracyChart.data.datasets[0].borderColor = 'rgb(124, 58, 237)';
+                } else {
+                    accuracyChart.data.datasets[0].backgroundColor = 'rgba(59, 130, 246, 0.7)';
+                    accuracyChart.data.datasets[0].borderColor = 'rgb(37, 99, 235)';
+                }
+                
+                accuracyChart.update();
+
+                radarChart.data.datasets[0].data = [data.precisionAvg, data.recallAvg, data.f1Avg];
+                radarChart.update();
+
+                const insightText = document.getElementById('dynamicInsightText');
+                insightText.classList.remove('fade-in');
+                void insightText.offsetWidth;
+                insightText.textContent = data.insight;
+                insightText.classList.add('fade-in');
+            }
+
+            initCharts();
+            updateDashboard('traditional');
+
+            document.getElementById('modelSelect').addEventListener('change', (e) => {
+                updateDashboard(e.target.value);
+            });
+        });
+    </script>
+</body>
+</html>
